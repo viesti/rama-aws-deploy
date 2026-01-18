@@ -1,0 +1,7 @@
+---
+- name: restart conductor
+  ansible.builtin.systemd:
+    name: conductor
+    state: restarted
+    daemon_reload: true
+  become: true

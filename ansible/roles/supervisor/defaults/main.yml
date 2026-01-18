@@ -1,0 +1,8 @@
+---
+# Default values for supervisor role
+rama_data_dir: /data/rama
+rama_local_dir: local-rama-data
+conductor_download_port: 8888
+supervisor_port_range:
+  - 20000
+  - 21000

@@ -1,0 +1,21 @@
+---
+# AOR (Agent-O-Rama) role defaults
+
+# Enable/disable AOR installation
+aor_enabled: true
+
+# AOR version
+aor_version: "0.7.0"
+
+# GitHub release download URL
+aor_download_url: "https://github.com/redplanetlabs/agent-o-rama/releases/download/release%2F{{ aor_version }}/agent-o-rama-{{ aor_version }}.zip"
+
+# Installation directory
+aor_install_dir: /opt/aor
+
+# Rama data directory (passed to --rama flag)
+aor_rama_dir: /data/rama
+
+# Service user (uses rama_user for non-privileged execution)
+aor_user: "{{ rama_user }}"
+aor_group: "{{ rama_user }}"

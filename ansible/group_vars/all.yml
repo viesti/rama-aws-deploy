@@ -1,0 +1,23 @@
+# Common variables for all hosts
+# These are typically passed from Terraform output or rama.tfvars
+
+# User configuration (passed via -e or inventory)
+# rama_user: ec2-user
+# rama_source_path: /path/to/rama.zip
+# zookeeper_url: https://example.com/zookeeper.tar.gz
+# license_source_path: /path/to/rama.license (optional)
+
+# Derived paths
+rama_data_dir: /data/rama
+rama_local_dir: local-rama-data
+
+# Java package
+java_package: java-21-amazon-corretto
+
+# ZooKeeper port
+zookeeper_port: 2000
+
+# Supervisor port range
+supervisor_port_range:
+  - 20000
+  - 21000

@@ -1,0 +1,7 @@
+---
+- name: restart aor
+  ansible.builtin.systemd:
+    name: aor
+    state: restarted
+    daemon_reload: true
+  become: true

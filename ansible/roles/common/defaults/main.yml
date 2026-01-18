@@ -1,0 +1,3 @@
+---
+# Default values for common role
+rama_data_dir: /data/rama

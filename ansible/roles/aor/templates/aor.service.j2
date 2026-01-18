@@ -1,0 +1,19 @@
+[Unit]
+Description=Agent-O-Rama (AOR) Service
+After=network.target conductor.service
+Wants=conductor.service
+
+[Service]
+Type=simple
+User={{ aor_user }}
+Group={{ aor_group }}
+WorkingDirectory={{ aor_install_dir }}
+ExecStart={{ aor_install_dir }}/aor --rama {{ aor_rama_dir }}
+Restart=always
+RestartSec=5
+
+# Environment variables (if needed)
+# Environment=VAR=value
+
+[Install]
+WantedBy=multi-user.target

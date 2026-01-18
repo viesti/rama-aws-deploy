@@ -1,0 +1,136 @@
+---
+# Conductor installation and configuration
+
+- name: Copy rama.zip to conductor
+  ansible.builtin.copy:
+    src: "{{ rama_source_path }}"
+    dest: "/home/{{ rama_user }}/rama.zip"
+    owner: "{{ rama_user }}"
+    group: "{{ rama_user }}"
+    mode: '0644'
+
+- name: Move rama.zip to data directory
+  ansible.builtin.copy:
+    src: "/home/{{ rama_user }}/rama.zip"
+    dest: "{{ rama_data_dir }}/rama.zip"
+    remote_src: true
+    owner: "{{ rama_user }}"
+    group: "{{ rama_user }}"
+    mode: '0644'
+  become: true
+
+- name: Unpack rama.zip
+  ansible.builtin.unarchive:
+    src: "{{ rama_data_dir }}/rama.zip"
+    dest: "{{ rama_data_dir }}"
+    remote_src: true
+    owner: "{{ rama_user }}"
+    group: "{{ rama_user }}"
+  become: true
+
+- name: Create conductor jars directory
+  ansible.builtin.file:
+    path: "{{ rama_data_dir }}/{{ rama_local_dir }}/conductor/jars"
+    state: directory
+    owner: "{{ rama_user }}"
+    group: "{{ rama_user }}"
+    mode: '0755'
+  become: true
+
+- name: Copy rama.zip to conductor jars directory for supervisor downloads
+  ansible.builtin.copy:
+    src: "{{ rama_data_dir }}/rama.zip"
+    dest: "{{ rama_data_dir }}/{{ rama_local_dir }}/conductor/jars/rama.zip"
+    remote_src: true
+    owner: "{{ rama_user }}"
+    group: "{{ rama_user }}"
+    mode: '0644'
+  become: true
+
+- name: Template rama.yaml for conductor
+  ansible.builtin.template:
+    src: rama.yaml.j2
+    dest: "{{ rama_data_dir }}/rama.yaml"
+    owner: "{{ rama_user }}"
+    group: "{{ rama_user }}"
+    mode: '0644'
+  become: true
+  notify: restart conductor
+
+- name: Check if license file exists on controller
+  ansible.builtin.stat:
+    path: "{{ license_source_path }}"
+  delegate_to: localhost
+  become: false
+  register: license_file_stat
+  when: license_source_path is defined and license_source_path | length > 0
+
+- name: Create license directory
+  ansible.builtin.file:
+    path: "{{ rama_data_dir }}/license"
+    state: directory
+    owner: "{{ rama_user }}"
+    group: "{{ rama_user }}"
+    mode: '0755'
+  become: true
+  when: license_file_stat.stat is defined and license_file_stat.stat.exists
+
+- name: Copy license file if present
+  ansible.builtin.copy:
+    src: "{{ license_source_path }}"
+    dest: "{{ rama_data_dir }}/license/rama.license"
+    owner: "{{ rama_user }}"
+    group: "{{ rama_user }}"
+    mode: '0644'
+  become: true
+  when: license_file_stat.stat is defined and license_file_stat.stat.exists
+
+- name: Install conductor systemd service
+  ansible.builtin.template:
+    src: conductor.service.j2
+    dest: /etc/systemd/system/conductor.service
+    mode: '0644'
+  become: true
+  notify: restart conductor
+
+- name: Enable and start conductor service
+  ansible.builtin.systemd:
+    name: conductor
+    state: started
+    enabled: true
+    daemon_reload: true
+  become: true
+
+- name: Wait for conductor to be available
+  ansible.builtin.uri:
+    url: "http://{{ ansible_host }}:8888"
+    status_code: 200
+  register: conductor_result
+  until: conductor_result.status == 200
+  retries: 60
+  delay: 5
+
+- name: Deploy monitoring module
+  ansible.builtin.command:
+    cmd: >
+      {{ rama_data_dir }}/rama deploy
+      --action launch
+      --systemModule monitoring
+      --tasks {{ monitoring_tasks }}
+      --threads {{ monitoring_threads }}
+      --workers {{ monitoring_workers }}
+    chdir: "{{ rama_data_dir }}"
+  become: true
+  register: monitoring_deploy
+  changed_when: "'Launched module' in monitoring_deploy.stdout"
+  failed_when: monitoring_deploy.rc != 0 and 'already exists' not in monitoring_deploy.stderr
+  when: monitoring_enabled | bool
+
+- name: Generate local rama.yaml for CLI commands
+  ansible.builtin.template:
+    src: local-rama.yaml.j2
+    dest: "{{ local_cluster_dir }}/rama.yaml"
+    mode: '0644'
+  delegate_to: localhost
+  become: false
+  run_once: true

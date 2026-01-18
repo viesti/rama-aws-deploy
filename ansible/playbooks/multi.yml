@@ -1,0 +1,27 @@
+---
+# Multi-node Rama cluster deployment playbook
+
+- name: Wait for all hosts to be ready
+  hosts: all
+  gather_facts: false
+  roles:
+    - common
+
+- name: Configure ZooKeeper nodes
+  hosts: zookeeper
+  roles:
+    - java
+    - zookeeper
+
+- name: Configure Conductor
+  hosts: conductor
+  roles:
+    - java
+    - conductor
+    - aor
+
+- name: Configure Supervisors
+  hosts: supervisor
+  roles:
+    - java
+    - supervisor

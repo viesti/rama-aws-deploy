@@ -1,0 +1,18 @@
+[Unit]
+Description=ZooKeeper Service
+Documentation=http://zookeeper.apache.org
+Requires=network.target
+After=network.target
+
+[Service]
+User={{ rama_user }}
+Group={{ rama_user }}
+ExecStart={{ zookeeper_install_dir }}/bin/zkServer.sh --config {{ zookeeper_conf_dir }} start-foreground
+ExecStop={{ zookeeper_install_dir }}/bin/zkServer.sh --config {{ zookeeper_conf_dir }} stop
+ExecReload={{ zookeeper_install_dir }}/bin/zkServer.sh --config {{ zookeeper_conf_dir }} restart
+Restart=always
+RestartSec=3
+WorkingDirectory={{ zookeeper_install_dir }}
+
+[Install]
+WantedBy=default.target

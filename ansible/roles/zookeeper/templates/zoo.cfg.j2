@@ -1,0 +1,15 @@
+tickTime={{ zookeeper_tick_time }}
+dataDir={{ zookeeper_data_dir }}
+clientPort={{ zookeeper_port }}
+# this prevents zookeeper from filling all available disk space
+autopurge.snapRetainCount={{ zookeeper_autopurge_snap_retain }}
+autopurge.purgeInterval={{ zookeeper_autopurge_interval }}
+
+# https://zookeeper.apache.org/doc/r3.6.2/zookeeperAdmin.html#sc_zkMulitServerSetup
+{% if groups['zookeeper'] | length > 1 %}
+initLimit={{ zookeeper_init_limit }}
+syncLimit={{ zookeeper_sync_limit }}
+{% for host in groups['zookeeper'] | sort %}
+server.{{ loop.index }}={{ hostvars[host]['ansible_host'] }}:2888:3888
+{% endfor %}
+{% endif %}

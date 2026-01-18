@@ -1,0 +1,19 @@
+---
+# Single-node Rama cluster deployment playbook
+# All components (ZooKeeper, Conductor, Supervisor) run on the same instance
+
+- name: Deploy single-node Rama cluster
+  hosts: rama
+  vars:
+    # For single-node, conductor and supervisor use the same host
+    conductor_host_config: localhost
+  roles:
+    - common
+    - java
+    - zookeeper
+    - conductor
+    - aor
+    - role: supervisor
+      vars:
+        # Override conductor_ip for single-node setup
+        conductor_ip: localhost

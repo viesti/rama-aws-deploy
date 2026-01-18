@@ -1,0 +1,6 @@
+# Supervisor-specific variables
+
+supervisor_service_name: supervisor
+
+# Conductor download URL port
+conductor_download_port: 8888

@@ -1,0 +1,18 @@
+---
+# Common tasks - wait for cloud-init to complete
+
+- name: Wait for cloud-init disk setup to complete
+  ansible.builtin.wait_for:
+    path: /data/disks_complete.signal
+    state: present
+    timeout: 300
+  when: "'zookeeper' not in group_names"
+
+- name: Ensure /data/rama directory exists
+  ansible.builtin.file:
+    path: "{{ rama_data_dir }}"
+    state: directory
+    owner: "{{ rama_user }}"
+    group: "{{ rama_user }}"
+    mode: '0755'
+  become: true

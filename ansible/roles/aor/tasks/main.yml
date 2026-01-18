@@ -1,0 +1,77 @@
+---
+# AOR (Agent-O-Rama) installation and configuration
+
+- name: AOR installation
+  when: aor_enabled | bool
+  block:
+    - name: Create AOR installation directory
+      ansible.builtin.file:
+        path: "{{ aor_install_dir }}"
+        state: directory
+        owner: "{{ aor_user }}"
+        group: "{{ aor_group }}"
+        mode: '0755'
+      become: true
+
+    - name: Download AOR zip file
+      ansible.builtin.get_url:
+        url: "{{ aor_download_url }}"
+        dest: "/tmp/aor.zip"
+        mode: '0644'
+      register: aor_download
+
+    - name: Remove old AOR installation if download changed
+      ansible.builtin.file:
+        path: "{{ aor_install_dir }}"
+        state: absent
+      become: true
+      when: aor_download.changed
+
+    - name: Recreate AOR installation directory
+      ansible.builtin.file:
+        path: "{{ aor_install_dir }}"
+        state: directory
+        owner: "{{ aor_user }}"
+        group: "{{ aor_group }}"
+        mode: '0755'
+      become: true
+      when: aor_download.changed
+
+    - name: Unzip AOR archive
+      ansible.builtin.unarchive:
+        src: "/tmp/aor.zip"
+        dest: "{{ aor_install_dir }}"
+        remote_src: true
+        owner: "{{ aor_user }}"
+        group: "{{ aor_group }}"
+      become: true
+      notify: restart aor
+
+    - name: Make AOR binary executable
+      ansible.builtin.file:
+        path: "{{ aor_install_dir }}/aor"
+        owner: "{{ aor_user }}"
+        group: "{{ aor_group }}"
+        mode: '0755'
+      become: true
+
+    - name: Install AOR systemd service
+      ansible.builtin.template:
+        src: aor.service.j2
+        dest: /etc/systemd/system/aor.service
+        mode: '0644'
+      become: true
+      notify: restart aor
+
+    - name: Enable and start AOR service
+      ansible.builtin.systemd:
+        name: aor
+        state: started
+        enabled: true
+        daemon_reload: true
+      become: true
+
+- name: AOR skipped
+  ansible.builtin.debug:
+    msg: "AOR installation skipped (aor_enabled={{ aor_enabled }}). Set aor_enabled=true to install."
+  when: not (aor_enabled | bool)

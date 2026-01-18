@@ -1,0 +1,21 @@
+---
+# Default values for conductor role
+rama_data_dir: /data/rama
+rama_local_dir: local-rama-data
+conductor_child_opts: "-XX:+PrintGC -Xloggc:logs/conductor-gc.log"
+conductor_host_config: localhost
+supervisor_port_range:
+  - 20000
+  - 21000
+
+# Worker configuration (for local rama.yaml)
+worker_child_opts: "-Xms8192m -Xmx8192m -Xmn4096m -XX:SurvivorRatio=4 -XX:MaxTenuringThreshold=6 -XX:+PrintGC -Xloggc:logs/worker-%ID%-gc.log"
+
+# Local CLI configuration
+# cluster_name and local_cluster_dir are passed via -e from rama-cluster.sh
+
+# Monitoring module configuration
+monitoring_enabled: true
+monitoring_tasks: 16
+monitoring_threads: 4
+monitoring_workers: 1

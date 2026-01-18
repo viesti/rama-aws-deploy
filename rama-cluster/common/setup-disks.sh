@@ -29,5 +29,6 @@ swapon /swapfile
 echo '/swapfile none swap sw 0 0' | tee -a /etc/fstab
 echo 'vm.swappiness=0' | tee -a /etc/sysctl.conf
 
-# to signal that disk process is done, so conductor provisioners can proceed
-touch /tmp/disks_complete.signal
+# to signal that disk process is done, so Ansible provisioners can proceed
+# Use /data instead of /tmp so the signal persists across reboots
+touch /data/disks_complete.signal

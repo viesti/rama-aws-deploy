@@ -1,0 +1,16 @@
+---
+# Default values for zookeeper role
+
+# Directory paths
+zookeeper_install_dir: "/home/{{ rama_user }}/zookeeper"
+zookeeper_data_dir: "{{ zookeeper_install_dir }}/data"
+zookeeper_log_dir: "{{ zookeeper_install_dir }}/logs"
+zookeeper_conf_dir: "{{ zookeeper_install_dir }}/conf"
+
+# ZooKeeper configuration
+zookeeper_tick_time: 2000
+zookeeper_autopurge_snap_retain: 3
+zookeeper_autopurge_interval: 24
+zookeeper_init_limit: 5
+zookeeper_sync_limit: 2
+zookeeper_port: 2000

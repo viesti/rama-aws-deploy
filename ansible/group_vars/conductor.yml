@@ -1,0 +1,7 @@
+# Conductor-specific variables
+
+conductor_service_name: conductor
+conductor_child_opts: "-XX:+PrintGC -Xloggc:logs/conductor-gc.log"
+
+# Conductor uses localhost since it runs on the same host
+conductor_host_config: localhost

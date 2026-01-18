@@ -8,3 +8,5 @@ rama-cluster/multi/terraform.tfstate.d
 license.edn
 rama.tfvars
 .idea
+**/.terraform/providers
+ansible/.venv

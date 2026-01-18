@@ -1,0 +1,75 @@
+---
+# Supervisor installation and configuration
+
+- name: Get conductor host IP
+  ansible.builtin.set_fact:
+    conductor_ip: "{{ hostvars[groups['conductor'][0]]['ansible_host'] }}"
+
+- name: Download rama.zip from conductor
+  ansible.builtin.get_url:
+    url: "http://{{ conductor_ip }}:{{ conductor_download_port }}/d/jar/download/rama.zip"
+    dest: "{{ rama_data_dir }}/rama.zip"
+    owner: "{{ rama_user }}"
+    group: "{{ rama_user }}"
+    mode: '0644'
+  register: download_result
+  until: download_result is succeeded
+  retries: 30
+  delay: 5
+  become: true
+
+- name: Unpack rama.zip
+  ansible.builtin.unarchive:
+    src: "{{ rama_data_dir }}/rama.zip"
+    dest: "{{ rama_data_dir }}"
+    remote_src: true
+    owner: "{{ rama_user }}"
+    group: "{{ rama_user }}"
+  become: true
+
+- name: Get IMDS token for metadata access
+  ansible.builtin.uri:
+    url: http://169.254.169.254/latest/api/token
+    method: PUT
+    headers:
+      X-aws-ec2-metadata-token-ttl-seconds: "21600"
+    return_content: true
+  register: imds_token_result
+
+- name: Get instance private IP from metadata
+  ansible.builtin.uri:
+    url: http://169.254.169.254/latest/meta-data/local-ipv4
+    headers:
+      X-aws-ec2-metadata-token: "{{ imds_token_result.content }}"
+    return_content: true
+  register: private_ip_result
+
+- name: Set supervisor host fact
+  ansible.builtin.set_fact:
+    supervisor_host_ip: "{{ private_ip_result.content }}"
+
+- name: Template rama.yaml for supervisor
+  ansible.builtin.template:
+    src: rama.yaml.j2
+    dest: "{{ rama_data_dir }}/rama.yaml"
+    owner: "{{ rama_user }}"
+    group: "{{ rama_user }}"
+    mode: '0644'
+  become: true
+  notify: restart supervisor
+
+- name: Install supervisor systemd service
+  ansible.builtin.template:
+    src: supervisor.service.j2
+    dest: /etc/systemd/system/supervisor.service
+    mode: '0644'
+  become: true
+  notify: restart supervisor
+
+- name: Enable and start supervisor service
+  ansible.builtin.systemd:
+    name: supervisor
+    state: started
+    enabled: true
+    daemon_reload: true
+  become: true

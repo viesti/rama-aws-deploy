@@ -1,0 +1,2 @@
+# ZooKeeper-specific variables
+# Note: Directory paths and configuration defaults are in roles/zookeeper/defaults/main.yml

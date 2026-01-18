@@ -1,0 +1,8 @@
+---
+# Install Java 21 Amazon Corretto
+
+- name: Install Java 21 Amazon Corretto
+  ansible.builtin.yum:
+    name: "{{ java_package }}"
+    state: present
+  become: true
