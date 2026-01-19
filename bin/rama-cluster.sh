@@ -12,6 +12,10 @@ usage () {
   echo ""
   echo "Options:"
   echo "  --singleNode  - Use single-node deployment"
+  echo ""
+  echo "Extra arguments for Ansible can be specified with ANSIBLE_EXTRA_ARGS environment variable"
+  echo "  ANSIBLE_EXTRA_ARGS=\"--check --limit conductor\""""
+  echo ""
   exit 2
 }
 
@@ -258,7 +262,9 @@ run_configure () {
     -e "zookeeper_url=${zookeeper_url}" \
     -e "license_source_path=${license_source_path}" \
     -e "rama_user=${rama_user}" \
-    $tf_apply_args
+    -e "cluster_name=${CLUSTER_NAME}" \
+    -e "local_cluster_dir=${HOME_CLUSTER_DIR}" \
+    ${ANSIBLE_EXTRA_ARGS:-}
 
   echo "Ansible configuration complete."
   return 0
