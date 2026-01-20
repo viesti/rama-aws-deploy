@@ -1,0 +1,8 @@
+---
+# Bastion host configuration playbook
+# Configures WireGuard VPN on the bastion host
+
+- name: Configure bastion host with WireGuard VPN
+  hosts: bastion
+  roles:
+    - wireguard

@@ -1,0 +1,123 @@
+---
+# WireGuard VPN installation and configuration
+
+- name: Install WireGuard and iptables
+  ansible.builtin.dnf:
+    name:
+      - wireguard-tools
+      - iptables
+    state: present
+  become: true
+
+- name: Ensure WireGuard config directory exists
+  ansible.builtin.file:
+    path: "{{ wireguard_config_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+  become: true
+
+- name: Check if private key exists
+  ansible.builtin.stat:
+    path: "{{ wireguard_config_dir }}/private.key"
+  register: private_key_stat
+  become: true
+
+- name: Generate WireGuard private key
+  ansible.builtin.shell:
+    cmd: wg genkey
+  register: generated_private_key
+  when: wireguard_private_key is not defined and not private_key_stat.stat.exists
+  changed_when: true
+  become: true
+
+- name: Save private key to file
+  ansible.builtin.copy:
+    content: "{{ wireguard_private_key | default(generated_private_key.stdout) }}"
+    dest: "{{ wireguard_config_dir }}/private.key"
+    owner: root
+    group: root
+    mode: '0600'
+  become: true
+  when: wireguard_private_key is defined or generated_private_key is changed
+
+- name: Read private key from file
+  ansible.builtin.slurp:
+    src: "{{ wireguard_config_dir }}/private.key"
+  register: private_key_content
+  become: true
+
+- name: Generate public key from private key
+  ansible.builtin.shell:
+    cmd: "echo '{{ private_key_content.content | b64decode | trim }}' | wg pubkey"
+  register: generated_public_key
+  changed_when: false
+  become: true
+
+- name: Save public key to file
+  ansible.builtin.copy:
+    content: "{{ generated_public_key.stdout }}"
+    dest: "{{ wireguard_config_dir }}/public.key"
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+
+- name: Display server public key
+  ansible.builtin.debug:
+    msg: "WireGuard server public key: {{ generated_public_key.stdout }}"
+
+- name: Detect default network interface
+  ansible.builtin.shell:
+    cmd: ip route | grep default | awk '{print $5}' | head -1
+  register: detected_interface
+  changed_when: false
+  when: wireguard_public_interface == ""
+
+- name: Set public interface fact
+  ansible.builtin.set_fact:
+    wireguard_public_interface_actual: "{{ wireguard_public_interface if wireguard_public_interface != '' else detected_interface.stdout }}"
+
+- name: Enable IP forwarding (persistent)
+  ansible.builtin.copy:
+    content: "net.ipv4.ip_forward = 1\n"
+    dest: /etc/sysctl.d/99-wireguard.conf
+    mode: '0644'
+  become: true
+  when: wireguard_enable_forwarding
+
+- name: Apply IP forwarding setting
+  ansible.builtin.command:
+    cmd: sysctl -p /etc/sysctl.d/99-wireguard.conf
+  become: true
+  when: wireguard_enable_forwarding
+  changed_when: true
+
+- name: Template WireGuard configuration
+  ansible.builtin.template:
+    src: wg0.conf.j2
+    dest: "{{ wireguard_config_dir }}/{{ wireguard_interface }}.conf"
+    owner: root
+    group: root
+    mode: '0600'
+  become: true
+  notify: restart wireguard
+
+- name: Enable and start WireGuard service
+  ansible.builtin.systemd:
+    name: "wg-quick@{{ wireguard_interface }}"
+    state: started
+    enabled: true
+    daemon_reload: true
+  become: true
+
+- name: Wait for WireGuard interface to be up
+  ansible.builtin.command:
+    cmd: wg show {{ wireguard_interface }}
+  register: wg_status
+  until: wg_status.rc == 0
+  retries: 10
+  delay: 2
+  changed_when: false
+  become: true

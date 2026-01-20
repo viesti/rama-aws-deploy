@@ -88,3 +88,11 @@ resource "aws_vpc_security_group_ingress_rule" "rama-bastion-public-internet" {
   ip_protocol                  = "tcp"
   cidr_ipv4                    = "0.0.0.0/0"
 }
+
+resource "aws_vpc_security_group_ingress_rule" "rama-bastion-wireguard" {
+  security_group_id = aws_security_group.bastion.id
+  from_port         = 51820
+  to_port           = 51820
+  ip_protocol       = "udp"
+  cidr_ipv4         = "0.0.0.0/0"
+}

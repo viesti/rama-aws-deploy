@@ -1,0 +1,29 @@
+# WireGuard VPN Server Configuration
+# Managed by Ansible - do not edit manually
+
+[Interface]
+Address = {{ wireguard_address }}
+ListenPort = {{ wireguard_port }}
+PrivateKey = {{ private_key_content.content | b64decode | trim }}
+
+# NAT masquerading for VPN clients
+PostUp = iptables -t nat -A POSTROUTING -s {{ wireguard_network }} -o {{ wireguard_public_interface_actual }} -j MASQUERADE
+PostUp = iptables -A FORWARD -i {{ wireguard_interface }} -j ACCEPT
+PostUp = iptables -A FORWARD -o {{ wireguard_interface }} -j ACCEPT
+PostDown = iptables -t nat -D POSTROUTING -s {{ wireguard_network }} -o {{ wireguard_public_interface_actual }} -j MASQUERADE
+PostDown = iptables -D FORWARD -i {{ wireguard_interface }} -j ACCEPT
+PostDown = iptables -D FORWARD -o {{ wireguard_interface }} -j ACCEPT
+
+{% for peer in wireguard_peers %}
+# Peer: {{ peer.name | default('unnamed') }}
+[Peer]
+PublicKey = {{ peer.public_key }}
+AllowedIPs = {{ peer.allowed_ips }}
+{% if peer.preshared_key is defined %}
+PresharedKey = {{ peer.preshared_key }}
+{% endif %}
+{% if peer.persistent_keepalive is defined %}
+PersistentKeepalive = {{ peer.persistent_keepalive }}
+{% endif %}
+
+{% endfor %}

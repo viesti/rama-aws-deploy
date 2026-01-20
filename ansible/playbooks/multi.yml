@@ -2,7 +2,7 @@
 # Multi-node Rama cluster deployment playbook
 
 - name: Wait for all hosts to be ready
-  hosts: all
+  hosts: all:!bastion
   gather_facts: false
   roles:
     - common

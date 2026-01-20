@@ -184,7 +184,13 @@ run_deploy () {
   license_source_path="$(get_tfvars_value $tfvars license_source_path)" || license_source_path=""
   rama_user="$(get_tfvars_value $tfvars username)"
 
-  # Run Ansible playbook
+  # Run Ansible playbook for bastion (WireGuard VPN)
+  echo "Running Ansible playbook to configure bastion..."
+  ANSIBLE_CONFIG="${ANSIBLE_DIR}/ansible.cfg" ansible-playbook -i ${INVENTORY_FILE} ${ANSIBLE_DIR}/playbooks/bastion.yml \
+    -e "rama_user=${rama_user}" \
+    ${ANSIBLE_EXTRA_ARGS:-}
+
+  # Run Ansible playbook for cluster
   echo "Running Ansible playbook to configure the cluster..."
   ANSIBLE_CONFIG="${ANSIBLE_DIR}/ansible.cfg" ansible-playbook -i ${INVENTORY_FILE} ${PLAYBOOK} \
     -e "rama_source_path=${rama_source_path}" \
@@ -192,7 +198,8 @@ run_deploy () {
     -e "license_source_path=${license_source_path}" \
     -e "rama_user=${rama_user}" \
     -e "cluster_name=${CLUSTER_NAME}" \
-    -e "local_cluster_dir=${HOME_CLUSTER_DIR}"
+    -e "local_cluster_dir=${HOME_CLUSTER_DIR}" \
+    ${ANSIBLE_EXTRA_ARGS:-}
 
   # Copy rama files to home directory
   (
@@ -255,7 +262,13 @@ run_configure () {
   license_source_path="$(get_tfvars_value $tfvars license_source_path)" || license_source_path=""
   rama_user="$(get_tfvars_value $tfvars username)"
 
-  # Run Ansible playbook
+  # Run Ansible playbook for bastion (WireGuard VPN)
+  echo "Running Ansible playbook to configure bastion..."
+  ANSIBLE_CONFIG="${ANSIBLE_DIR}/ansible.cfg" ansible-playbook -i ${INVENTORY_FILE} ${ANSIBLE_DIR}/playbooks/bastion.yml \
+    -e "rama_user=${rama_user}" \
+    ${ANSIBLE_EXTRA_ARGS:-}
+
+  # Run Ansible playbook for cluster
   echo "Running Ansible playbook to configure the cluster..."
   ANSIBLE_CONFIG="${ANSIBLE_DIR}/ansible.cfg" ansible-playbook -i ${INVENTORY_FILE} ${PLAYBOOK} \
     -e "rama_source_path=${rama_source_path}" \

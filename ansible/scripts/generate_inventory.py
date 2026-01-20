@@ -31,53 +31,63 @@ def generate_multi_inventory(tf_output):
         ssh_key_path = tf_output['private_ssh_key']['value']
         inventory['all']['vars']['ansible_ssh_private_key_file'] = ssh_key_path
 
-    # Add bastion SSH args if bastion is present
+    # Build proxy args for private hosts (not bastion)
+    proxy_args = None
     if 'bastion_host' in tf_output:
         bastion_host = tf_output['bastion_host']['value']
         rama_user = tf_output['rama_user']['value']
 
-        # Build ProxyCommand for bastion jump with SSH key
+        # Add bastion as a targetable host (connects directly, no proxy)
+        inventory['all']['children']['bastion'] = {
+            'hosts': {
+                'bastion-0': {
+                    'ansible_host': bastion_host
+                }
+            }
+        }
+
+        # Build ProxyCommand for private hosts (applied per-group, not to all)
         if ssh_key_path:
-            # Use ProxyCommand instead of ProxyJump for better key handling
             proxy_cmd = (
                 f"ssh -i {ssh_key_path} -W %h:%p -o StrictHostKeyChecking=no "
                 f"-o UserKnownHostsFile=/dev/null {rama_user}@{bastion_host}"
             )
-            inventory['all']['vars']['ansible_ssh_common_args'] = (
-                f'-o ProxyCommand="{proxy_cmd}"'
-            )
+            proxy_args = f'-o ProxyCommand="{proxy_cmd}"'
         else:
-            inventory['all']['vars']['ansible_ssh_common_args'] = (
-                f"-o ProxyJump={rama_user}@{bastion_host}"
-            )
+            proxy_args = f"-o ProxyJump={rama_user}@{bastion_host}"
 
     # Add ZooKeeper hosts
     if 'zookeeper_private_ips' in tf_output:
         zk_ips = tf_output['zookeeper_private_ips']['value']
-        inventory['all']['children']['zookeeper'] = {'hosts': {}}
+        zk_group = {'hosts': {}}
+        if proxy_args:
+            zk_group['vars'] = {'ansible_ssh_common_args': proxy_args}
         for idx, ip in enumerate(zk_ips):
-            inventory['all']['children']['zookeeper']['hosts'][f'zk-{idx}'] = {
-                'ansible_host': ip
-            }
+            zk_group['hosts'][f'zk-{idx}'] = {'ansible_host': ip}
+        inventory['all']['children']['zookeeper'] = zk_group
 
     # Add conductor
     if 'conductor_private_ip' in tf_output:
-        inventory['all']['children']['conductor'] = {
+        conductor_group = {
             'hosts': {
                 'conductor-0': {
                     'ansible_host': tf_output['conductor_private_ip']['value']
                 }
             }
         }
+        if proxy_args:
+            conductor_group['vars'] = {'ansible_ssh_common_args': proxy_args}
+        inventory['all']['children']['conductor'] = conductor_group
 
     # Add supervisors
     if 'supervisor_private_ips' in tf_output:
         supervisor_ips = tf_output['supervisor_private_ips']['value']
-        inventory['all']['children']['supervisor'] = {'hosts': {}}
+        supervisor_group = {'hosts': {}}
+        if proxy_args:
+            supervisor_group['vars'] = {'ansible_ssh_common_args': proxy_args}
         for idx, ip in enumerate(supervisor_ips):
-            inventory['all']['children']['supervisor']['hosts'][f'supervisor-{idx}'] = {
-                'ansible_host': ip
-            }
+            supervisor_group['hosts'][f'supervisor-{idx}'] = {'ansible_host': ip}
+        inventory['all']['children']['supervisor'] = supervisor_group
 
     return inventory
 
@@ -108,10 +118,21 @@ def generate_single_inventory(tf_output):
     }
 
     # Add private SSH key if specified
+    ssh_key_path = None
     if 'private_ssh_key' in tf_output and tf_output['private_ssh_key']['value']:
-        inventory['all']['vars']['ansible_ssh_private_key_file'] = (
-            tf_output['private_ssh_key']['value']
-        )
+        ssh_key_path = tf_output['private_ssh_key']['value']
+        inventory['all']['vars']['ansible_ssh_private_key_file'] = ssh_key_path
+
+    # Add bastion as a targetable host (for WireGuard, etc.)
+    if 'bastion_host' in tf_output:
+        bastion_host = tf_output['bastion_host']['value']
+        inventory['all']['children']['bastion'] = {
+            'hosts': {
+                'bastion-0': {
+                    'ansible_host': bastion_host
+                }
+            }
+        }
 
     # Get the single instance IP
     if 'rama_ip' in tf_output:

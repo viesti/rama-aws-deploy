@@ -1,0 +1,39 @@
+---
+# Default values for wireguard role
+
+# WireGuard interface name
+wireguard_interface: wg0
+
+# WireGuard listen port
+wireguard_port: 51820
+
+# VPN network configuration
+wireguard_address: "10.200.200.1/24"
+wireguard_network: "10.200.200.0/24"
+
+# Directory for WireGuard configuration
+wireguard_config_dir: /etc/wireguard
+
+# Enable IP forwarding for routing traffic
+wireguard_enable_forwarding: true
+
+# PostUp/PostDown iptables rules for NAT (masquerading)
+# Set to the public interface name (auto-detected if empty)
+wireguard_public_interface: ""
+
+# Peer configurations (list of peers to allow)
+# Example:
+# wireguard_peers:
+#   - name: client1
+#     public_key: "BASE64_PUBLIC_KEY"
+#     allowed_ips: "10.200.200.2/32"
+#     preshared_key: "OPTIONAL_PRESHARED_KEY"
+wireguard_peers: []
+
+# Server private key (should be provided securely, not stored in defaults)
+# Generate with: wg genkey
+# wireguard_private_key: ""
+
+# Server public key (derived from private key)
+# Generate with: echo "PRIVATE_KEY" | wg pubkey
+# wireguard_public_key: ""
